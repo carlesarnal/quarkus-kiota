@@ -1,0 +1,3 @@
+com.github.andreatp.quarkus.kiota.deployment.KiotaJsonCodeGen
+com.github.andreatp.quarkus.kiota.deployment.KiotaYamlCodeGen
+com.github.andreatp.quarkus.kiota.deployment.KiotaYmlCodeGen
