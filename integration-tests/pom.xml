@@ -6,75 +6,17 @@
     <artifactId>quarkus-kiota-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>quarkus-kiota-integration-tests</artifactId>
-  <name>Quarkus Kiota - Integration Tests</name>
+  <artifactId>quarkus-kiota-integration-tests-parent</artifactId>
+  <name>Quarkus Kiota - Integration Tests - Parent</name>
+  <packaging>pom</packaging>
+  <modules>
+    <module>basic</module>
+    <module>rename</module>
+  </modules>
   <properties>
     <skipITs>true</skipITs>
     <kiota.libs.version>0.8.0</kiota.libs.version>
   </properties>
-  <dependencies>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.github.andreatp</groupId>
-      <artifactId>quarkus-kiota</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-jackson</artifactId>
-    </dependency>
-
-    <!-- Kiota specific dependencies -->
-    <dependency>
-      <groupId>com.microsoft.kiota</groupId>
-      <artifactId>microsoft-kiota-abstractions</artifactId>
-      <version>${kiota.libs.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.microsoft.kiota</groupId>
-      <artifactId>microsoft-kiota-http-okHttp</artifactId>
-      <version>${kiota.libs.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.microsoft.kiota</groupId>
-      <artifactId>microsoft-kiota-serialization-json</artifactId>
-      <version>${kiota.libs.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.microsoft.kiota</groupId>
-      <artifactId>microsoft-kiota-serialization-text</artifactId>
-      <version>${kiota.libs.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.microsoft.kiota</groupId>
-      <artifactId>microsoft-kiota-serialization-form</artifactId>
-      <version>${kiota.libs.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.microsoft.kiota</groupId>
-      <artifactId>microsoft-kiota-serialization-multipart</artifactId>
-      <version>${kiota.libs.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-junit5</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.rest-assured</groupId>
-      <artifactId>rest-assured</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
   <build>
     <plugins>
       <plugin>
@@ -84,6 +26,7 @@
           <execution>
             <goals>
               <goal>build</goal>
+              <!-- TODO: Make sure to document this! -->
               <goal>generate-code</goal>
             </goals>
           </execution>

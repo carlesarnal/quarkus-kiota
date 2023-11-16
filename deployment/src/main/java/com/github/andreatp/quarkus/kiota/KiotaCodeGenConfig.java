@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import org.eclipse.microprofile.config.Config;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,48 +34,48 @@ public class KiotaCodeGenConfig {
 
     // Kiota generate parameters
     private static final String DEFAULT_CLIENT_NAME = "ApiClient";
-    private static final String CLIENT_CLASS_NAME = KIOTA_CONFIG_PREFIX + ".client-class-name";
+    private static final String CLIENT_CLASS_NAME = ".class-name";
 
     private static final String DEFAULT_CLIENT_PACKAGE = "io.apisdk";
-    private static final String CLIENT_PACKAGE_NAME = KIOTA_CONFIG_PREFIX + ".client-package-name";
-    private static final String INCLUDE_PATH = KIOTA_CONFIG_PREFIX + ".include-path";
-    private static final String EXCLUDE_PATH = KIOTA_CONFIG_PREFIX + ".exclude-path";
+    private static final String CLIENT_PACKAGE_NAME = ".package-name";
+    private static final String INCLUDE_PATH = ".include-path";
+    private static final String EXCLUDE_PATH = ".exclude-path";
 
-    public static io.quarkus.utilities.OS getOs() {
-        String os = System.getProperties().getProperty(OS);
+    public static io.quarkus.utilities.OS getOs(final Config config) {
+        String os = config.getConfigValue(OS).getValue();
         if (os == null) {
             return io.quarkus.utilities.OS.determineOS();
         }
         return io.quarkus.utilities.OS.valueOf(os);
     }
 
-    public static String getArch() {
-        String arch = System.getProperties().getProperty(ARCH);
+    public static String getArch(final Config config) {
+        String arch = config.getConfigValue(ARCH).getValue();
         if (arch == null) {
             return io.quarkus.utilities.OS.getArchitecture();
         }
         return arch;
     }
 
-    public static String getProvided() {
-        return System.getProperties().getProperty(PROVIDED);
+    public static String getProvided(final Config config) {
+        return config.getConfigValue(PROVIDED).getValue();
     }
 
-    public static String getReleaseUrl() {
-        String releaseUrl = System.getProperties().getProperty(RELEASE_URL);
+    public static String getReleaseUrl(final Config config) {
+        String releaseUrl = config.getConfigValue(RELEASE_URL).getValue();
         if (releaseUrl != null) {
             return releaseUrl;
         }
         return DEFAULT_RELEASE_URL;
     }
 
-    public static String getVersion() {
-        String version = System.getProperties().getProperty(VERSION);
+    public static String getVersion(final Config config) {
+        String version = config.getConfigValue(VERSION).getValue();
         if (version == null) {
             // Dynamically retrieve latest for convenience
             Log.warn("No Kiota version specified, trying to retrieve it from the GitHub API");
             try {
-                URI releaseURI = new URI(getReleaseUrl());
+                URI releaseURI = new URI(getReleaseUrl(config));
                 URI latestVersionURI =
                         new URI(
                                 releaseURI.getScheme(),
@@ -125,32 +127,32 @@ public class KiotaCodeGenConfig {
         return version;
     }
 
-    public static String getClientClassName() {
-        String clientName = System.getProperties().getProperty(CLIENT_CLASS_NAME);
+    public static String getClientClassName(final Config config, String filename) {
+        String clientName = config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + CLIENT_CLASS_NAME).getValue();
         if (clientName != null) {
             return clientName;
         }
         return DEFAULT_CLIENT_NAME;
     }
 
-    public static String getClientPackageName() {
-        String packageName = System.getProperties().getProperty(CLIENT_PACKAGE_NAME);
+    public static String getClientPackageName(final Config config, String filename) {
+        String packageName = config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + CLIENT_PACKAGE_NAME).getValue();
         if (packageName != null) {
             return packageName;
         }
-        return DEFAULT_CLIENT_PACKAGE;
+        return DEFAULT_CLIENT_PACKAGE + "." + filename;
     }
 
-    public static String getIncludePath() {
-        return System.getProperties().getProperty(INCLUDE_PATH);
+    public static String getIncludePath(final Config config, String filename) {
+        return config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + INCLUDE_PATH).getValue();
     }
 
-    public static String getExcludePath() {
-        return System.getProperties().getProperty(EXCLUDE_PATH);
+    public static String getExcludePath(final Config config, String filename) {
+        return config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + EXCLUDE_PATH).getValue();
     }
 
-    public static int getTimeout() {
-        String timeout = System.getProperties().getProperty(TIMEOUT);
+    public static int getTimeout(final Config config) {
+        String timeout = config.getConfigValue(TIMEOUT).getValue();
         if (timeout != null) {
             return Integer.valueOf(timeout);
         }

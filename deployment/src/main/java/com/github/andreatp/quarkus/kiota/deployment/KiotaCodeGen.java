@@ -99,16 +99,16 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
         Log.debug("Running trigger logic.");
         String folderHashBefore = getFolderMd5(context.outDir());
 
-        String executable = KiotaCodeGenConfig.getProvided();
-        if (KiotaCodeGenConfig.getProvided() == null) {
-            String version = KiotaCodeGenConfig.getVersion();
+        String executable = KiotaCodeGenConfig.getProvided(context.config());
+        if (KiotaCodeGenConfig.getProvided(context.config()) == null) {
+            String version = KiotaCodeGenConfig.getVersion(context.config());
             KiotaClassifier classifier =
-                    new KiotaClassifier(KiotaCodeGenConfig.getOs(), KiotaCodeGenConfig.getArch());
+                    new KiotaClassifier(KiotaCodeGenConfig.getOs(context.config()), KiotaCodeGenConfig.getArch(context.config()));
             URL downloadUrl;
             try {
                 downloadUrl =
                         new URL(
-                                KiotaCodeGenConfig.getReleaseUrl()
+                                KiotaCodeGenConfig.getReleaseUrl(context.config())
                                         + "/download/v"
                                         + version
                                         + "/"
@@ -116,7 +116,7 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
                                         + ".zip");
             } catch (MalformedURLException e) {
                 throw new CodeGenException(
-                        "Malformed release URL: " + KiotaCodeGenConfig.getReleaseUrl() + version,
+                        "Malformed release URL: " + KiotaCodeGenConfig.getReleaseUrl(context.config()) + version,
                         e);
             }
             Path destFolder = context.workDir().resolve(KIOTA).resolve(version);
@@ -132,7 +132,7 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
 
         String finalExecutable = executable;
         for (Path spec : findDescriptions(context.inputDir()).collect(Collectors.toList())) {
-            executeKiota(finalExecutable, spec, context.outDir(), context.shouldRedirectIO());
+            executeKiota(finalExecutable, spec, context.outDir(), context.shouldRedirectIO(), context.config());
         }
 
         String folderHashAfter = getFolderMd5(context.outDir());
@@ -141,7 +141,7 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
 
     @Override
     public boolean shouldRun(Path sourceDir, Config config) {
-        Log.error("Should run inspecting the source dir: " + sourceDir);
+        Log.debug("Should run inspecting the source dir: " + sourceDir);
         if (Files.isDirectory(sourceDir)) {
             return findDescriptions(sourceDir).count() > 0;
         }
@@ -176,7 +176,7 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
         }
     }
 
-    private void executeKiota(String binary, Path openApiSpec, Path outputDir, boolean redirectIO)
+    private void executeKiota(String binary, Path openApiSpec, Path outputDir, boolean redirectIO, Config config)
             throws CodeGenException {
         if (!openApiSpec.toFile().exists()) {
             throw new IllegalArgumentException(
@@ -184,7 +184,7 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
         }
         List<String> cmd = new ArrayList<>();
         outputDir.toFile().mkdirs();
-        String finalTargetDirectory = finalTargetDirectory(outputDir).getAbsolutePath();
+        String finalTargetDirectory = finalTargetDirectory(outputDir, config, openApiSpec.toFile().getName()).getAbsolutePath();
 
         cmd.add(binary);
         cmd.add("generate");
@@ -196,9 +196,9 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
         cmd.add("--language");
         cmd.add("java");
         cmd.add("--class-name");
-        cmd.add(KiotaCodeGenConfig.getClientClassName());
+        cmd.add(KiotaCodeGenConfig.getClientClassName(config, openApiSpec.toFile().getName()));
         cmd.add("--namespace-name");
-        cmd.add(KiotaCodeGenConfig.getClientPackageName());
+        cmd.add(KiotaCodeGenConfig.getClientPackageName(config, openApiSpec.toFile().getName()));
         cmd.add("--clean-output");
         cmd.add("true");
         cmd.add("--clear-cache");
@@ -206,31 +206,31 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
         cmd.add("--log-level");
         cmd.add("Warning");
 
-        String includePath = KiotaCodeGenConfig.getIncludePath();
+        String includePath = KiotaCodeGenConfig.getIncludePath(config, openApiSpec.toFile().getName());
         if (includePath != null) {
             cmd.add("--include-path");
-            cmd.add(KiotaCodeGenConfig.getIncludePath());
+            cmd.add(KiotaCodeGenConfig.getIncludePath(config, openApiSpec.toFile().getName()));
         }
 
-        String excludePath = KiotaCodeGenConfig.getExcludePath();
+        String excludePath = KiotaCodeGenConfig.getExcludePath(config, openApiSpec.toFile().getName());
         if (includePath != null) {
             cmd.add("--exclude-path");
-            cmd.add(KiotaCodeGenConfig.getExcludePath());
+            cmd.add(KiotaCodeGenConfig.getExcludePath(config, openApiSpec.toFile().getName()));
         }
 
-        runProcess(cmd, redirectIO, outputDir);
+        runProcess(cmd, redirectIO, outputDir, config, openApiSpec.toFile().getName());
     }
 
-    private File finalTargetDirectory(Path outDir) {
+    private File finalTargetDirectory(Path outDir, Config config, String filename) {
         Path namespaceResolver = outDir;
 
-        for (String part : KiotaCodeGenConfig.getClientPackageName().split("\\.")) {
+        for (String part : KiotaCodeGenConfig.getClientPackageName(config, filename).split("\\.")) {
             namespaceResolver = namespaceResolver.resolve(part);
         }
         return namespaceResolver.toFile();
     }
 
-    private void runProcess(List<String> cmd, boolean redirectIO, Path outputDir)
+    private void runProcess(List<String> cmd, boolean redirectIO, Path outputDir, Config config, String filename)
             throws CodeGenException {
         Log.info("Going to execute the command: " + cmd.stream().collect(Collectors.joining(" ")));
         Process ps = null;
@@ -242,13 +242,13 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
                 pb.inheritIO();
             }
             ps = pb.start();
-            ps.waitFor(KiotaCodeGenConfig.getTimeout(), TimeUnit.SECONDS);
+            ps.waitFor(KiotaCodeGenConfig.getTimeout(config), TimeUnit.SECONDS);
 
             if (ps.exitValue() != 0) {
                 throw new CodeGenException(
                         "Error executing the Kiota command, exit code is " + ps.exitValue());
             }
-            File kiotaLockFile = new File(finalTargetDirectory(outputDir).getAbsolutePath(), "kiota-lock.json");
+            File kiotaLockFile = new File(finalTargetDirectory(outputDir, config, filename).getAbsolutePath(), "kiota-lock.json");
             if (!kiotaLockFile.exists()) {
                 throw new CodeGenException(
                         "Error executing the Kiota command, no output found, cannot find the"
