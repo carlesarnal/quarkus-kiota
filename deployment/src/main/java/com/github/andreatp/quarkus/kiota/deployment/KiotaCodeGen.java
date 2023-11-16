@@ -141,6 +141,7 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
 
     @Override
     public boolean shouldRun(Path sourceDir, Config config) {
+        Log.error("Should run inspecting the source dir: " + sourceDir);
         if (Files.isDirectory(sourceDir)) {
             return findDescriptions(sourceDir).count() > 0;
         }

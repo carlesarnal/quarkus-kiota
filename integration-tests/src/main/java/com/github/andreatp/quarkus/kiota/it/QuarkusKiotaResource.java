@@ -29,7 +29,7 @@ public class QuarkusKiotaResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public String hello() {
-        return "Hello quarkus-kiota";
+    public Greeting hello() {
+        return new Greeting("Hello quarkus-kiota");
     }
 }

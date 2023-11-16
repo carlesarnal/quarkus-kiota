@@ -2,11 +2,13 @@ package com.github.andreatp.quarkus.kiota.it;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.microsoft.kiota.RequestAdapter;
 import com.microsoft.kiota.authentication.AnonymousAuthenticationProvider;
 import com.microsoft.kiota.http.OkHttpRequestAdapter;
 import io.apisdk.ApiClient;
+import io.apisdk.models.Greeting;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +19,7 @@ public class QuarkusKiotaResourceTest {
 
     @Test
     public void testHelloEndpoint() {
-        given().when().get("/quarkus-kiota").then().statusCode(200).body(is("Hello quarkus-kiota"));
+        given().when().get("/quarkus-kiota").then().statusCode(200).body(is("{\"value\":\"Hello quarkus-kiota\"}"));
     }
 
     @Test
@@ -28,9 +30,9 @@ public class QuarkusKiotaResourceTest {
         ApiClient client = new ApiClient(adapter);
 
         // Act
-        String result = client.quarkusKiota().get().get(3, TimeUnit.SECONDS);
+        Greeting result = client.quarkusKiota().get().get(3, TimeUnit.SECONDS);
 
         // Assert
-        assert result.equals("Hello quarkus-kiota1");
+        assertEquals("Hello quarkus-kiota", result.getValue());
     }
 }

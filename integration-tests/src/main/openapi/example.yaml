@@ -11,6 +11,13 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/Greeting"
           description: Test
       description: Returns an hello world
+components:
+  schemas:
+    Greeting:
+      type: object
+      properties:
+        value:
+          type: string
