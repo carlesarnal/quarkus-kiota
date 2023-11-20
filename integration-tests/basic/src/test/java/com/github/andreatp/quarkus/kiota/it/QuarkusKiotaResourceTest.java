@@ -10,16 +10,19 @@ import com.microsoft.kiota.http.OkHttpRequestAdapter;
 import io.apisdk.example.yaml.ApiClient;
 import io.apisdk.example.yaml.models.Greeting;
 import io.quarkus.test.junit.QuarkusTest;
-import org.junit.jupiter.api.Test;
-
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 public class QuarkusKiotaResourceTest {
 
     @Test
     public void testHelloEndpoint() {
-        given().when().get("/quarkus-kiota").then().statusCode(200).body(is("{\"value\":\"Hello quarkus-kiota\"}"));
+        given().when()
+                .get("/quarkus-kiota")
+                .then()
+                .statusCode(200)
+                .body(is("{\"value\":\"Hello quarkus-kiota\"}"));
     }
 
     @Test

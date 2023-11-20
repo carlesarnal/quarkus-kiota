@@ -5,14 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import org.eclipse.microprofile.config.Config;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import org.eclipse.microprofile.config.Config;
 
 @ConfigRoot(name = KiotaCodeGenConfig.KIOTA_CONFIG_PREFIX, phase = ConfigPhase.BUILD_TIME)
 public class KiotaCodeGenConfig {
@@ -128,7 +127,9 @@ public class KiotaCodeGenConfig {
     }
 
     public static String getClientClassName(final Config config, String filename) {
-        String clientName = config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + CLIENT_CLASS_NAME).getValue();
+        String clientName =
+                config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + CLIENT_CLASS_NAME)
+                        .getValue();
         if (clientName != null) {
             return clientName;
         }
@@ -136,7 +137,9 @@ public class KiotaCodeGenConfig {
     }
 
     public static String getClientPackageName(final Config config, String filename) {
-        String packageName = config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + CLIENT_PACKAGE_NAME).getValue();
+        String packageName =
+                config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + CLIENT_PACKAGE_NAME)
+                        .getValue();
         if (packageName != null) {
             return packageName;
         }
@@ -144,11 +147,13 @@ public class KiotaCodeGenConfig {
     }
 
     public static String getIncludePath(final Config config, String filename) {
-        return config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + INCLUDE_PATH).getValue();
+        return config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + INCLUDE_PATH)
+                .getValue();
     }
 
     public static String getExcludePath(final Config config, String filename) {
-        return config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + EXCLUDE_PATH).getValue();
+        return config.getConfigValue(KIOTA_CONFIG_PREFIX + "." + filename + EXCLUDE_PATH)
+                .getValue();
     }
 
     public static int getTimeout(final Config config) {

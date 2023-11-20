@@ -2,9 +2,11 @@ package com.github.andreatp.quarkus.kiota.it;
 
 public class Greeting {
     private String value;
+
     public Greeting() {
         this.value = null;
     }
+
     public Greeting(String value) {
         this.value = value;
     }

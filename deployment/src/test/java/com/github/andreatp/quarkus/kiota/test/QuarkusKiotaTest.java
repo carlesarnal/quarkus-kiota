@@ -1,6 +1,5 @@
 package com.github.andreatp.quarkus.kiota.test;
 
-import com.github.andreatp.quarkus.kiota.deployment.KiotaCodeGen;
 import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -13,8 +12,7 @@ public class QuarkusKiotaTest {
     // Start unit test with your extension loaded
     @RegisterExtension
     static final QuarkusUnitTest unitTest =
-            new QuarkusUnitTest().setArchiveProducer(() ->
-                    ShrinkWrap.create(JavaArchive.class));
+            new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Test
     public void writeYourOwnUnitTest() {

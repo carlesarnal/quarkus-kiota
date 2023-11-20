@@ -3,12 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.github.andreatp</groupId>
-    <artifactId>quarkus-kiota-parent</artifactId>
+    <artifactId>kiota-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   <artifactId>quarkus-kiota-integration-tests-parent</artifactId>
-  <name>Quarkus Kiota - Integration Tests - Parent</name>
   <packaging>pom</packaging>
+  <name>Quarkus Kiota - Integration Tests - Parent</name>
   <modules>
     <module>000</module>
     <module>basic</module>
@@ -16,7 +16,6 @@
   </modules>
   <properties>
     <skipITs>true</skipITs>
-    <kiota.libs.version>0.8.0</kiota.libs.version>
   </properties>
   <build>
     <plugins>

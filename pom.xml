@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.andreatp</groupId>
-  <artifactId>quarkus-kiota-parent</artifactId>
+  <artifactId>kiota-parent</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Quarkus Kiota - Parent</name>
+  <name>Kiota - Parent</name>
   <modules>
+    <!-- Quarkus Extension -->
     <module>deployment</module>
     <module>runtime</module>
+    <module>integration-tests</module>
+
+    <!-- Abstraction libraries -->
+    <module>serialization-jackson</module>
   </modules>
   <properties>
     <compiler-plugin.version>3.11.0</compiler-plugin.version>
@@ -19,6 +23,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.version>3.5.1</quarkus.version>
     <spotless.version>2.40.0</spotless.version>
+    <kiota.libs.version>0.8.0</kiota.libs.version>
     <surefire-plugin.version>3.0.0</surefire-plugin.version>
   </properties>
   <dependencyManagement>
@@ -75,15 +80,6 @@
           <groupId>com.diffplug.spotless</groupId>
           <artifactId>spotless-maven-plugin</artifactId>
           <version>${spotless.version}</version>
-          <executions>
-            <execution>
-              <id>format</id>
-              <phase>process-sources</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
           <configuration>
             <formats>
               <format>
@@ -120,6 +116,15 @@
               <sortPom></sortPom>
             </pom>
           </configuration>
+          <executions>
+            <execution>
+              <id>format</id>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <phase>process-sources</phase>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
