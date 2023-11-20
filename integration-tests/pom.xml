@@ -10,6 +10,7 @@
   <name>Quarkus Kiota - Integration Tests - Parent</name>
   <packaging>pom</packaging>
   <modules>
+    <module>000</module>
     <module>basic</module>
     <module>rename</module>
   </modules>
