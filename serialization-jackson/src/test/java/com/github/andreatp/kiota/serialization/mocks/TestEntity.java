@@ -1,4 +1,4 @@
-package com.microsoft.kiota.serialization.mocks;
+package com.github.andreatp.kiota.serialization.mocks;
 
 import com.microsoft.kiota.PeriodAndDuration;
 import com.microsoft.kiota.serialization.AdditionalDataHolder;

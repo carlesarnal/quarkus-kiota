@@ -213,6 +213,14 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
         cmd.add(KiotaCodeGenConfig.getClientClassName(config, openApiSpec.toFile().getName()));
         cmd.add("--namespace-name");
         cmd.add(KiotaCodeGenConfig.getClientPackageName(config, openApiSpec.toFile().getName()));
+        for (String ser: KiotaCodeGenConfig.getSerializer(config, openApiSpec.toFile().getName())) {
+            cmd.add("--serializer");
+            cmd.add(ser);
+        }
+        for (String deser: KiotaCodeGenConfig.getDeserializer(config, openApiSpec.toFile().getName())) {
+            cmd.add("--deserializer");
+            cmd.add(deser);
+        }
         cmd.add("--clean-output");
         cmd.add("true");
         cmd.add("--clear-cache");
@@ -224,14 +232,14 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
                 KiotaCodeGenConfig.getIncludePath(config, openApiSpec.toFile().getName());
         if (includePath != null) {
             cmd.add("--include-path");
-            cmd.add(KiotaCodeGenConfig.getIncludePath(config, openApiSpec.toFile().getName()));
+            cmd.add(includePath);
         }
 
         String excludePath =
                 KiotaCodeGenConfig.getExcludePath(config, openApiSpec.toFile().getName());
         if (includePath != null) {
             cmd.add("--exclude-path");
-            cmd.add(KiotaCodeGenConfig.getExcludePath(config, openApiSpec.toFile().getName()));
+            cmd.add(excludePath);
         }
 
         runProcess(cmd, redirectIO, outputDir, config, openApiSpec.toFile().getName());

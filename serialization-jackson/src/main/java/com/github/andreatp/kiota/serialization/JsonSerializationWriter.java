@@ -1,4 +1,4 @@
-package com.github.andreatp.kiota.serialization.serialization;
+package com.github.andreatp.kiota.serialization;
 
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonGenerator;

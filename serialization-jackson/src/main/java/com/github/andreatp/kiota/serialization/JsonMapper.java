@@ -1,4 +1,4 @@
-package com.github.andreatp.kiota.serialization.serialization;
+package com.github.andreatp.kiota.serialization;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

@@ -36,9 +36,9 @@
       <version>${kiota.libs.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.microsoft.kiota</groupId>
-      <artifactId>microsoft-kiota-serialization-json</artifactId>
-      <version>${kiota.libs.version}</version>
+      <groupId>com.github.andreatp</groupId>
+      <artifactId>kiota-serialization-jackson</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.microsoft.kiota</groupId>

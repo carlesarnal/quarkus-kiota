@@ -1,13 +1,11 @@
-package com.microsoft.kiota.serialization;
+package com.github.andreatp.kiota.serialization;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.andreatp.kiota.serialization.serialization.JsonParseNodeFactory;
-import com.github.andreatp.kiota.serialization.serialization.JsonSerializationWriterFactory;
-import com.microsoft.kiota.serialization.mocks.IntersectionTypeMock;
-import com.microsoft.kiota.serialization.mocks.MyEnum;
-import com.microsoft.kiota.serialization.mocks.SecondTestEntity;
-import com.microsoft.kiota.serialization.mocks.TestEntity;
+import com.github.andreatp.kiota.serialization.mocks.MyEnum;
+import com.github.andreatp.kiota.serialization.mocks.IntersectionTypeMock;
+import com.github.andreatp.kiota.serialization.mocks.SecondTestEntity;
+import com.github.andreatp.kiota.serialization.mocks.TestEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
