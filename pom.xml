@@ -14,6 +14,7 @@
 
     <!-- Abstraction libraries -->
     <module>serialization-jackson</module>
+    <module>http-vertx</module>
   </modules>
   <properties>
     <compiler-plugin.version>3.11.0</compiler-plugin.version>
@@ -23,7 +24,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.version>3.5.1</quarkus.version>
     <spotless.version>2.40.0</spotless.version>
-    <kiota.libs.version>0.8.0</kiota.libs.version>
+    <kiota.libs.version>0.10.0-SNAPSHOT</kiota.libs.version>
     <surefire-plugin.version>3.0.0</surefire-plugin.version>
   </properties>
   <dependencyManagement>
