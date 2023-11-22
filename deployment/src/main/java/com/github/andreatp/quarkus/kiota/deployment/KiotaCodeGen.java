@@ -135,6 +135,10 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
             }
 
             executable = destFolder.resolve(classifier.binaryName()).toFile().getAbsolutePath();
+        } else {
+            if (OS.determineOS() == OS.WINDOWS && !executable.endsWith(EXE)) {
+                executable = executable + EXE;
+            }
         }
 
         String finalExecutable = executable;
