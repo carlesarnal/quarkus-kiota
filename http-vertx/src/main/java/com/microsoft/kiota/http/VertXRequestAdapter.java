@@ -9,13 +9,19 @@ import com.microsoft.kiota.serialization.ParseNodeFactory;
 import com.microsoft.kiota.serialization.ParseNodeFactoryRegistry;
 import com.microsoft.kiota.serialization.SerializationWriterFactory;
 import com.microsoft.kiota.serialization.SerializationWriterFactoryRegistry;
+import com.microsoft.kiota.serialization.ValuedEnumParser;
 import com.microsoft.kiota.store.BackingStoreFactory;
 import com.microsoft.kiota.store.BackingStoreFactorySingleton;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -27,16 +33,21 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.microsoft.kiota.http.HeadersCompatibility.getMultiMap;
+import static com.microsoft.kiota.http.HttpMethodCompatibility.convert;
 
 /** RequestAdapter implementation for OkHttp */
 public class VertXRequestAdapter implements RequestAdapter {
@@ -140,13 +151,13 @@ public class VertXRequestAdapter implements RequestAdapter {
     }
 
     private static final String nullRequestInfoParameter = "parameter requestInfo cannot be null";
-    private static final String nullForValueParameter = "parameter forValue cannot be null";
+    private static final String nullEnumParserParameter = "parameter enumParser cannot be null";
     private static final String nullFactoryParameter = "parameter factory cannot be null";
 
     @Nullable public <ModelType extends Parsable> List<ModelType> sendCollection(
             @Nonnull final RequestInformation requestInfo,
-            @Nonnull final ParsableFactory<ModelType> factory,
-            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings) {
+            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings,
+            @Nonnull final ParsableFactory<ModelType> factory) {
         Objects.requireNonNull(requestInfo, nullRequestInfoParameter);
         Objects.requireNonNull(factory, nullFactoryParameter);
 
@@ -186,18 +197,10 @@ public class VertXRequestAdapter implements RequestAdapter {
         return null;
     }
 
-    private static final Pattern queryParametersCleanupPattern =
-            Pattern.compile("\\{\\?[^\\}]+}", Pattern.CASE_INSENSITIVE);
-    private final char[] queryParametersToDecodeForTracing = {'-', '.', '~', '$'};
-
-    /** The key used for the event when a custom response handler is invoked. */
-    @Nonnull public static final String eventResponseHandlerInvokedKey =
-            "com.microsoft.kiota.response_handler_invoked";
-
     @Nullable public <ModelType extends Parsable> ModelType send(
             @Nonnull final RequestInformation requestInfo,
-            @Nonnull final ParsableFactory<ModelType> factory,
-            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings) {
+            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings,
+            @Nonnull final ParsableFactory<ModelType> factory) {
         Objects.requireNonNull(requestInfo, nullRequestInfoParameter);
         Objects.requireNonNull(factory, nullFactoryParameter);
 
@@ -231,16 +234,12 @@ public class VertXRequestAdapter implements RequestAdapter {
         }
     }
 
-    @Nonnull private String getMediaTypeAndSubType(@Nonnull final MediaType mediaType) {
-        return mediaType.type() + "/" + mediaType.subtype();
-    }
-
     @Nullable public <ModelType> ModelType sendPrimitive(
             @Nonnull final RequestInformation requestInfo,
-            @Nonnull final Class<ModelType> targetClass,
-            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings) {
+            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings,
+            @Nonnull final Class<ModelType> targetClass) {
         Objects.requireNonNull(requestInfo, nullRequestInfoParameter);
-        Objects.requireNonNull(targetClass, nullForValueParameter);
+        Objects.requireNonNull(targetClass, "parameter targetClass cannot be null");
             HttpResponse response = this.getHttpResponseMessage(requestInfo, null);
             final ResponseHandler responseHandler = getResponseHandler(requestInfo);
             if (responseHandler == null) {
@@ -255,14 +254,11 @@ public class VertXRequestAdapter implements RequestAdapter {
                     } else {
                         if (targetClass == InputStream.class) {
                             closeResponse = false;
-                            final ResponseBody body = response.body();
-                            if (body == null) {
-                                return null;
-                            }
-                            final InputStream rawInputStream = body.byteStream();
+                            // TODO: verify streaming responses
+                            final InputStream rawInputStream = new ByteArrayInputStream(response.bodyAsBuffer().getBytes());
                             return (ModelType) rawInputStream;
                         }
-                        final ParseNode rootNode = getRootParseNode(response, span, span);
+                        final ParseNode rootNode = getRootParseNode(response);
                         if (rootNode == null) {
                             closeResponse = false;
                             return null;
@@ -314,10 +310,10 @@ public class VertXRequestAdapter implements RequestAdapter {
 
     @Nullable public <ModelType extends Enum<ModelType>> ModelType sendEnum(
             @Nonnull final RequestInformation requestInfo,
-            @Nonnull final Function<String, ModelType> forValue,
-            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings) {
+            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings,
+            @Nonnull final ValuedEnumParser<ModelType> enumParser) {
         Objects.requireNonNull(requestInfo, nullRequestInfoParameter);
-        Objects.requireNonNull(forValue, nullForValueParameter);
+        Objects.requireNonNull(enumParser, nullEnumParserParameter);
             HttpResponse response = this.getHttpResponseMessage(requestInfo, null);
             final ResponseHandler responseHandler = getResponseHandler(requestInfo);
             if (responseHandler == null) {
@@ -332,7 +328,7 @@ public class VertXRequestAdapter implements RequestAdapter {
                         closeResponse = false;
                         return null;
                     }
-                        final Object result = rootNode.getEnumValue(forValue);
+                        final Object result = rootNode.getEnumValue(enumParser);
                         return (ModelType) result;
                 } finally {
                     closeResponse(closeResponse, response);
@@ -344,10 +340,10 @@ public class VertXRequestAdapter implements RequestAdapter {
 
     @Nullable public <ModelType extends Enum<ModelType>> List<ModelType> sendEnumCollection(
             @Nonnull final RequestInformation requestInfo,
-            @Nonnull final Function<String, ModelType> forValue,
-            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings) {
+            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings,
+            @Nonnull final ValuedEnumParser<ModelType> enumParser) {
         Objects.requireNonNull(requestInfo, nullRequestInfoParameter);
-        Objects.requireNonNull(forValue, nullForValueParameter);
+        Objects.requireNonNull(enumParser, nullEnumParserParameter);
             HttpResponse response = this.getHttpResponseMessage(requestInfo, null);
             final ResponseHandler responseHandler = getResponseHandler(requestInfo);
             if (responseHandler == null) {
@@ -362,7 +358,7 @@ public class VertXRequestAdapter implements RequestAdapter {
                         closeResponse = false;
                         return null;
                     }
-                        final Object result = rootNode.getCollectionOfEnumValues(forValue);
+                        final Object result = rootNode.getCollectionOfEnumValues(enumParser);
                         return (List<ModelType>) result;
                 } finally {
                     closeResponse(closeResponse, response);
@@ -374,53 +370,47 @@ public class VertXRequestAdapter implements RequestAdapter {
 
     @Nullable public <ModelType> List<ModelType> sendPrimitiveCollection(
             @Nonnull final RequestInformation requestInfo,
-            @Nonnull final Class<ModelType> targetClass,
-            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings) {
+            @Nullable final HashMap<String, ParsableFactory<? extends Parsable>> errorMappings,
+            @Nonnull final Class<ModelType> targetClass) {
         Objects.requireNonNull(requestInfo, nullRequestInfoParameter);
 
             HttpResponse response = getHttpResponseMessage(requestInfo, null);
             final ResponseHandler responseHandler = getResponseHandler(requestInfo);
             if (responseHandler == null) {
                 boolean closeResponse = true;
-                try {
-                    this.throwIfFailedResponse(response, errorMappings);
-                    if (this.shouldReturnNull(response)) {
-                        return null;
-                    }
-                    final ParseNode rootNode = getRootParseNode(response);
-                    if (rootNode == null) {
-                        closeResponse = false;
-                        return null;
-                    }
-                        final List<ModelType> result =
-                                rootNode.getCollectionOfPrimitiveValues(targetClass);
-                        return result;
-                    } finally {
-                        deserializationSpan.end();
-                    }
+                this.throwIfFailedResponse(response, errorMappings);
+                if (this.shouldReturnNull(response)) {
+                    return null;
+                }
+                final ParseNode rootNode = getRootParseNode(response);
+                if (rootNode == null) {
+                    closeResponse = false;
+                    return null;
+                }
+                    final List<ModelType> result =
+                            rootNode.getCollectionOfPrimitiveValues(targetClass);
+                    return result;
             } else {
                 return responseHandler.handleResponse(response, errorMappings);
             }
     }
 
-    @Nullable private ParseNode getRootParseNode(final Response response) {
-            final ResponseBody body =
-                    response.body(); // closing the response closes the body and stream
-            // https://square.github.io/okhttp/4.x/okhttp/okhttp3/-response-body/
+    @Nullable private ParseNode getRootParseNode(final HttpResponse response) {
+            final Buffer body = response.bodyAsBuffer(); // closing the response closes the body and stream
             if (body == null) {
                 return null;
             }
-            final InputStream rawInputStream = body.byteStream();
-            final MediaType contentType = body.contentType();
+            final InputStream rawInputStream = new ByteArrayInputStream(body.getBytes());
+
+            final String contentType = response.headers().get(contentTypeHeaderKey);
             if (contentType == null) {
                 return null;
             }
-            return pNodeFactory.getParseNode(getMediaTypeAndSubType(contentType), rawInputStream);
+            return pNodeFactory.getParseNode(contentType, rawInputStream);
     }
 
-    private boolean shouldReturnNull(final Response response) {
-        final int statusCode = response.code();
-        return statusCode == 204;
+    private boolean shouldReturnNull(final HttpResponse response) {
+        return response.statusCode() == 204;
     }
 
     private HttpResponse throwIfFailedResponse(
@@ -497,43 +487,50 @@ public class VertXRequestAdapter implements RequestAdapter {
             additionalContext.put(claimsKey, claims);
         }
         this.authProvider.authenticateRequest(requestInfo, additionalContext);
-        final HttpResponse response =
-                this.client
-                        // TODO: stubbed
-                        // getRequestFromRequestInformation(requestInfo))
-                        .request(null, "")
-
-                        .send()
-                        .result();
-        final String contentLengthHeaderValue = getHeaderValue(response, "Content-Length");
-        if (contentLengthHeaderValue != null && !contentLengthHeaderValue.isEmpty()) {
-            final int contentLengthHeaderValueAsInt =
-                    Integer.parseInt(contentLengthHeaderValue);
-        }
-        final String contentTypeHeaderValue = getHeaderValue(response, "Content-Length");
-        return this.retryCAEResponseIfRequired(
-                response, requestInfo, claims);
-    }
-
-    private String getHeaderValue(final HttpResponse response, String key) {
-        final List<String> headerValue = response.headers().getAll(key);
-        if (headerValue != null && headerValue.size() > 0) {
-            final String firstEntryValue = headerValue.get(0);
-            if (firstEntryValue != null && !firstEntryValue.isEmpty()) {
-                return firstEntryValue;
+        HttpResponse response;
+        Future<HttpResponse<Buffer>> result;
+        try {
+            // TODO refactor this implementation
+            var req = this.client
+                    .requestAbs(convert(requestInfo.httpMethod), requestInfo.getUri().toString())
+                    .putHeaders(getMultiMap(requestInfo.headers))
+                    .followRedirects(true);
+            if (requestInfo.content == null) {
+                result = req.send();
+            } else {
+                // TODO: implement proper streaming and verify async behavior etc.
+                byte[] content = requestInfo.content.readAllBytes();
+                if (content.length > 0) {
+                    result = req.sendBuffer(Buffer.buffer(content));
+                } else {
+                    result = req.send();
+                }
             }
+
+            // Hack - make everything sync now!
+            var completableTask = new CompletableFuture<HttpResponse>();
+            result
+                .onSuccess(r -> completableTask.complete(r))
+                .onFailure(err -> completableTask.completeExceptionally(err));
+
+            // TODO: verify how to make this better
+            response = completableTask.get();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
-        return null;
+        return this.retryCAEResponseIfRequired(response, requestInfo, claims);
     }
 
     private static final Pattern bearerPattern =
             Pattern.compile("^Bearer\\s.*", Pattern.CASE_INSENSITIVE);
     private static final Pattern claimsPattern =
             Pattern.compile("\\s?claims=\"([^\"]+)\"", Pattern.CASE_INSENSITIVE);
-
-    /** Key used for events when an authentication challenge is returned by the API */
-    @Nonnull public static final String authenticateChallengedEventKey =
-            "com.microsoft.kiota.authenticate_challenge_received";
 
     private HttpResponse retryCAEResponseIfRequired(
             @Nonnull final HttpResponse response,
@@ -563,7 +560,7 @@ public class VertXRequestAdapter implements RequestAdapter {
                 && (claims == null || claims.isEmpty())
                 && // we avoid infinite loops and retry only once
                 (requestInfo.content == null || requestInfo.content.markSupported())) {
-            final List<String> authenticateHeader = response.headers("WWW-Authenticate");
+            final List<String> authenticateHeader = response.headers().getAll("WWW-Authenticate");
             if (!authenticateHeader.isEmpty()) {
                 String rawHeaderValue = null;
                 for (final String authenticateEntry : authenticateHeader) {
@@ -612,55 +609,21 @@ public class VertXRequestAdapter implements RequestAdapter {
      * @throws URISyntaxException if the URI is invalid.
      * @throws MalformedURLException if the URL is invalid.
      */
-    protected @Nonnull Request getRequestFromRequestInformation(
+    protected @Nonnull HttpRequest getRequestFromRequestInformation(
             @Nonnull final RequestInformation requestInfo)
             throws URISyntaxException, MalformedURLException {
             final URL requestURL = requestInfo.getUri().toURL();
 
-            RequestBody body =
-                    requestInfo.content == null
-                            ? null
-                            : new RequestBody() {
-                                @Override
-                                public MediaType contentType() {
-                                    final Set<String> contentTypes =
-                                            requestInfo.headers.containsKey(contentTypeHeaderKey)
-                                                    ? requestInfo.headers.get(contentTypeHeaderKey)
-                                                    : new HashSet<>();
-                                    if (contentTypes.isEmpty()) {
-                                        return null;
-                                    } else {
-                                        final String contentType =
-                                                contentTypes.toArray(new String[] {})[0];
-                                        return MediaType.parse(contentType);
-                                    }
-                                }
+            final HttpRequest request = client
+                    .request(convert(requestInfo.httpMethod), requestURL.toString())
+                    .followRedirects(true);
 
-                                @Override
-                                public void writeTo(@Nonnull BufferedSink sink) throws IOException {
-                                    sink.writeAll(Okio.source(requestInfo.content));
-                                }
-                            };
-
-            // https://stackoverflow.com/a/35743536
-            if (body == null
-                    && (requestInfo.httpMethod.equals(HttpMethod.POST)
-                            || requestInfo.httpMethod.equals(HttpMethod.PATCH)
-                            || requestInfo.httpMethod.equals(HttpMethod.PUT))) {
-                body = RequestBody.create(new byte[0]);
-            }
-            final Request.Builder requestBuilder =
-                    new Request.Builder()
-                            .url(requestURL)
-                            .method(requestInfo.httpMethod.toString(), body);
             for (final Map.Entry<String, Set<String>> headerEntry :
                     requestInfo.headers.entrySet()) {
                 for (final String headerValue : headerEntry.getValue()) {
-                    requestBuilder.addHeader(headerEntry.getKey(), headerValue);
+                    request.putHeader(headerEntry.getKey(), headerValue);
                 }
             }
-            final HttpRequest request = requestBuilder.build();
-            final List<String> contentLengthHeader = request.headers().values("Content-Length");
             return request;
     }
 }

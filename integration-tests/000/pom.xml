@@ -31,9 +31,9 @@
       <version>${kiota.libs.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.microsoft.kiota</groupId>
-      <artifactId>microsoft-kiota-http-okHttp</artifactId>
-      <version>${kiota.libs.version}</version>
+      <groupId>com.github.andreatp</groupId>
+      <artifactId>kiota-http-vertx</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.github.andreatp</groupId>

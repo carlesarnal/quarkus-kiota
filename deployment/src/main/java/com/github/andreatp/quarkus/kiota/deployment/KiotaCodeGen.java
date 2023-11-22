@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
@@ -114,7 +115,7 @@ public abstract class KiotaCodeGen implements CodeGenProvider {
                         new URL(
                                 KiotaCodeGenConfig.getReleaseUrl(context.config())
                                         + "/download/v"
-                                        + version
+                                        + URLEncoder.encode(version, StandardCharsets.UTF_8)
                                         + "/"
                                         + classifier.downloadArtifactName()
                                         + ".zip");

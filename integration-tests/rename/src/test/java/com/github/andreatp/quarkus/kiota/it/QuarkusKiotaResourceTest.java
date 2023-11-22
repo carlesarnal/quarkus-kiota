@@ -6,11 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.microsoft.kiota.RequestAdapter;
 import com.microsoft.kiota.authentication.AnonymousAuthenticationProvider;
-import com.microsoft.kiota.http.OkHttpRequestAdapter;
+import com.microsoft.kiota.http.VertXRequestAdapter;
 import foo.bar.MyApiClient;
 import foo.bar.models.Greeting;
 import io.quarkus.test.junit.QuarkusTest;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -28,12 +27,12 @@ public class QuarkusKiotaResourceTest {
     @Test
     public void testHelloEndpointUsingTheKiotaClient() throws Exception {
         // Arrange
-        RequestAdapter adapter = new OkHttpRequestAdapter(new AnonymousAuthenticationProvider());
+        RequestAdapter adapter = new VertXRequestAdapter(new AnonymousAuthenticationProvider());
         adapter.setBaseUrl("http://localhost:8081");
         MyApiClient client = new MyApiClient(adapter);
 
         // Act
-        Greeting result = client.quarkusKiota().get().get(3, TimeUnit.SECONDS);
+        Greeting result = client.quarkusKiota().get();
 
         // Assert
         assertEquals("Hello quarkus-kiota", result.getValue());

@@ -6,6 +6,7 @@ import com.microsoft.kiota.serialization.AdditionalDataHolder;
 import com.microsoft.kiota.serialization.Parsable;
 import com.microsoft.kiota.serialization.ParsableFactory;
 import com.microsoft.kiota.serialization.ParseNode;
+import com.microsoft.kiota.serialization.ValuedEnumParser;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
@@ -205,8 +206,8 @@ public class JsonParseNode implements ParseNode {
     }
 
     @Nullable public <T extends Enum<T>> List<T> getCollectionOfEnumValues(
-            @Nonnull final Class<T> targetEnum) {
-        Objects.requireNonNull(targetEnum, "parameter targetEnum cannot be null");
+            @Nonnull final ValuedEnumParser<T> enumParser) {
+        Objects.requireNonNull(enumParser, "parameter enumParser cannot be null");
         if (currentNode.isNull()) {
             return null;
         } else if (currentNode.isArray()) {
@@ -217,7 +218,7 @@ public class JsonParseNode implements ParseNode {
                 final JsonParseNode itemNode = new JsonParseNode(item);
                 itemNode.setOnBeforeAssignFieldValues(this.getOnBeforeAssignFieldValues());
                 itemNode.setOnAfterAssignFieldValues(this.getOnAfterAssignFieldValues());
-                result.add(itemNode.getEnumValue(targetEnum));
+                result.add(itemNode.getEnumValue(enumParser));
             }
             return result;
         } else throw new RuntimeException("invalid state expected to have an array node");
@@ -230,42 +231,28 @@ public class JsonParseNode implements ParseNode {
         return item;
     }
 
-    @Nullable public <T extends Enum<T>> T getEnumValue(@Nonnull final Class<T> targetEnum) {
+    @Nullable public <T extends Enum<T>> T getEnumValue(@Nonnull final ValuedEnumParser<T> enumParser) {
         final String rawValue = this.getStringValue();
         if (rawValue == null || rawValue.isEmpty()) {
             return null;
         }
-        return getEnumValueInt(rawValue, targetEnum);
+        return enumParser.forValue(rawValue);
     }
 
-    @SuppressWarnings("unchecked")
-    // TODO: this should not use reflection
-    private <T extends Enum<T>> T getEnumValueInt(
-            @Nonnull final String rawValue, @Nonnull final Class<T> targetEnum) {
-        try {
-            return (T) targetEnum.getMethod("forValue", String.class).invoke(null, rawValue);
-        } catch (NoSuchMethodException
-                 | IllegalAccessException
-                 | InvocationTargetException
-                 | SecurityException ex) {
-            return null;
-        }
-    }
-
-    @Nullable public <T extends Enum<T>> EnumSet<T> getEnumSetValue(@Nonnull final Class<T> targetEnum) {
+    @Nullable public <T extends Enum<T>> EnumSet<T> getEnumSetValue(@Nonnull final ValuedEnumParser<T> enumParser) {
         final String rawValue = this.getStringValue();
         if (rawValue == null || rawValue.isEmpty()) {
             return null;
         }
-        final EnumSet<T> result = EnumSet.noneOf(targetEnum);
+        final List<T> result = new ArrayList<>();
         final String[] rawValues = rawValue.split(",");
         for (final String rawValueItem : rawValues) {
-            final T value = getEnumValueInt(rawValueItem, targetEnum);
+            final T value = enumParser.forValue(rawValueItem);
             if (value != null) {
                 result.add(value);
             }
         }
-        return result;
+        return EnumSet.copyOf(result);
     }
 
     private <T extends Parsable> void assignFieldValues(

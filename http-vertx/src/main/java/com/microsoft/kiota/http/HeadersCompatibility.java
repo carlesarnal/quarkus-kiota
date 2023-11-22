@@ -37,15 +37,21 @@ public class HeadersCompatibility {
      * @param headers the okhttp3 headers
      * @return the RequestHeaders object
      */
-    @Nonnull public static RequestHeaders getRequestHeaders(@Nonnull final okhttp3.Headers headers) {
+    @Nonnull public static RequestHeaders getRequestHeaders(@Nonnull final MultiMap headers) {
         Objects.requireNonNull(headers);
         final RequestHeaders requestHeaders = new RequestHeaders();
-        headers.toMultimap()
+        headers.names()
                 .forEach(
-                        (name, value) -> {
+                        (name) -> {
                             Objects.requireNonNull(name);
-                            requestHeaders.put(name, new HashSet<>(value));
+                            requestHeaders.put(name, new HashSet<>(headers.getAll(name)));
                         });
         return requestHeaders;
+    }
+
+    @Nonnull public static MultiMap getMultiMap(@Nonnull final RequestHeaders headers) {
+        MultiMap result = MultiMap.caseInsensitiveMultiMap();
+        headers.entrySet().forEach((elem) -> result.add(elem.getKey(), elem.getValue()));
+        return result;
     }
 }
