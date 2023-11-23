@@ -64,7 +64,6 @@ public class QuarkusKiotaResourceTest {
         WebClient webClient = WebClient.create(vertx); //Don't do this in a regular application, the vertx instance must be injected
 
         OAuth2Options options = new OAuth2Options()
-                .setFlow(OAuth2FlowType.CLIENT)
                 .setClientId(UUID.randomUUID().toString())
                 .setTokenPath(keycloakUrl + "token")
                 .setClientSecret(UUID.randomUUID().toString());
@@ -72,7 +71,8 @@ public class QuarkusKiotaResourceTest {
         //Adding random as the mock does not care about concrete values
         OAuth2Auth oAuth2Auth = OAuth2Auth.create(vertx, options);
 
-        Oauth2Credentials oauth2Credentials = new Oauth2Credentials();
+        Oauth2Credentials oauth2Credentials = new Oauth2Credentials()
+                .setFlow(OAuth2FlowType.CLIENT);
 
         OAuth2WebClient oAuth2WebClient = OAuth2WebClient.create(webClient, oAuth2Auth)
                 .withCredentials(oauth2Credentials);
